@@ -82,15 +82,15 @@
   </MainLayout>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import MainLayout from "~/layouts/MainLayout.vue";
-import { useUserStore } from "~/stores/user";
+import { Product, useUserStore } from "~/stores/user";
 import {computed} from 'vue'
 
 const userStore = useUserStore();
 const route = useRoute();
 
-const currentImage = ref(null);
+const currentImage = ref('');
 
 onMounted(() => {
   watchEffect(() => {
@@ -112,7 +112,7 @@ const images = ref([
 ]);
 
 const isInCart = computed(() => {
-  const res = userStore.cart?.find((el) => el?.id == route.params.id)
+  const res = !!userStore.cart?.find((el: Product) => el.id === Number(route.params.id))
   return res;
 });
 
