@@ -16,7 +16,7 @@
     "vue-router": "^4.2.5"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.cjs"
   },
   "dependencies": {
     "@nuxtjs/supabase": "^1.1.2",
