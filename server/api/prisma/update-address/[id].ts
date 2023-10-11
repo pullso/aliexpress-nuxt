@@ -5,10 +5,10 @@ const prisma = new PrismaClient();
 export default defineEventHandler(async (event) => {
   const { userId, stripeId, name, address, zipcode, country, city, products } =
     await readBody(event);
-  const order = await prisma.orders.create({
+
+  const res = await prisma.addresses.update({
+    where: { id: Number(event.context.params?.id) },
     data: {
-      userId,
-      stripeId,
       name,
       address,
       zipcode,
@@ -17,10 +17,5 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  products.forEach(async (product: any) => {
-    await prisma.orderItem.create({
-      data: { orderId: order.id, productId: Number(product.id) },
-    });
-  });
-  return order;
+  return res;
 });

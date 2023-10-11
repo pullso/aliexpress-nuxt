@@ -23,9 +23,9 @@
           <TextInput
             class="w-full mt-2"
             placeholder="Zip Code"
-            v-model:input="zipCode"
+            v-model:input="zipcode"
             inputType="text"
-            :error="error && error.type == 'zipCode' ? error.message : ''"
+            :error="error && error.type == 'zipcode' ? error.message : ''"
           />
 
           <TextInput
@@ -67,7 +67,7 @@ const userStore = useUserStore();
 
 let contactName = ref(null);
 let address = ref(null);
-let zipCode = ref(null);
+let zipcode = ref(null);
 let city = ref(null);
 let country = ref(null);
 
@@ -94,9 +94,9 @@ const submit = async () => {
       type: "address",
       message: "An address is required",
     };
-  } else if (!zipCode.value) {
+  } else if (!zipcode.value) {
     error.value = {
-      type: "zipCode",
+      type: "zipcode",
       message: "A zip code is required",
     };
   } else if (!city.value) {
