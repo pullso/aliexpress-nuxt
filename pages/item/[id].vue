@@ -25,9 +25,11 @@
           </div>
         </div>
         <div class="bg-white p-3 rounded-lg md:w-[60%]">
-          <div v-if="true">
-            <p class="mb-2">Title</p>
-            <p class="font-light text-[12px] mb-2">description</p>
+          <div v-if="product?.data">
+            <p class="mb-2">{{ product.data.title }}</p>
+            <p class="font-light text-[12px] mb-2">
+              {{ product.data.description }}
+            </p>
           </div>
           <div class="flex items-center pt-1.5">
             <span class="h-4 min-w-4 rounded-full p-0.5 bg-[#FFD000] mr-2">
@@ -85,39 +87,47 @@
 <script setup lang="ts">
 import MainLayout from "~/layouts/MainLayout.vue";
 import { Product, useUserStore } from "~/stores/user";
-import {computed} from 'vue'
+import { computed } from "vue";
 
 const userStore = useUserStore();
 const route = useRoute();
 
-const currentImage = ref('');
-
-onMounted(() => {
-  watchEffect(() => {
-    currentImage.value = "https://picsum.photos/id/21/800/800";
-    images.value[0] = "https://picsum.photos/id/21/800/800";
-  });
-});
-
-const priceComputed = computed(() => {
-  return "12";
-});
-
-const images = ref([
+const currentImage = ref("");
+const images = ref<string[]>([
   "",
   "https://picsum.photos/id/81/800/800",
   "https://picsum.photos/id/36/800/800",
   "https://picsum.photos/id/99/800/800",
   "https://picsum.photos/id/100/800/800",
 ]);
+const product = ref();
+
+onBeforeMount(async () => {
+  product.value = await useFetch(
+    `/api/prisma/get-product-by-id/${route.params.id}`
+  );
+});
+
+watchEffect(() => {
+  if (product.value?.data) {
+    currentImage.value = product.value.data?.url;
+    images.value[0] = product.value.data?.url;
+    userStore.isLoading = false;
+  }
+});
+
+const priceComputed = computed(() => {
+  if (!product.value?.data?.price) return "0.00";
+  return product.value?.data?.price / 100;
+});
 
 const isInCart = computed(() => {
-  const res = !!userStore.cart?.find((el: Product) => el.id === Number(route.params.id))
+  const res = !!userStore.cart?.find((el) => el.id === Number(route.params.id));
   return res;
 });
 
 const addToCart = () => {
-  alert("added");
+  if (product.value?.data) userStore.cart.push(product.value?.data);
 };
 </script>
 

@@ -4,13 +4,15 @@ export type Product = {
   price: number;
   title: string;
   id: number;
+  url: string;
+  description: string;
 };
 
 interface State {
   isMenuOverlay: boolean;
   isLoading: boolean;
-  cart: Product[] | [];
-  checkout: Product[] | [];
+  cart: Product[];
+  checkout: Product[];
 }
 
 export const useUserStore = defineStore("user", {
