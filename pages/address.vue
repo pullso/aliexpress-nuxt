@@ -64,6 +64,7 @@ import MainLayout from "~/layouts/MainLayout.vue";
 
 import { useUserStore } from "~/stores/user";
 const userStore = useUserStore();
+const user = useSupabaseUser();
 
 let contactName = ref(null);
 let address = ref(null);
@@ -71,12 +72,27 @@ let zipcode = ref(null);
 let city = ref(null);
 let country = ref(null);
 
-let currentAddress = ref(null);
+let currentAddress = ref();
 let isUpdate = ref(false);
 let isWorking = ref(false);
-let error = ref<{type: string; message: string;} | null>(null);
+let error = ref<{ type: string; message: string } | null>(null);
 
-watchEffect(() => {
+watchEffect(async () => {
+  currentAddress.value = await useFetch(
+    `/api/prisma/get-address-by-user/${user.value.id}`
+  );
+
+  if (currentAddress.value.data) {
+    const data = currentAddress.value.data;
+    contactName.value = data.name;
+    address.value = data.address;
+    zipcode.value = data.zipcode;
+    city.value = data.city;
+    country.value = data.country;
+
+    isUpdate.value = true;
+  }
+
   userStore.isLoading = false;
 });
 
@@ -115,6 +131,22 @@ const submit = async () => {
     isWorking.value = false;
     return;
   }
+
+  await useFetch(`/api/prisma/update-address/${currentAddress.value.data.id}`, {
+    method: isUpdate.value ? "PATCH" : "POST",
+    body: {
+      userId: user.value.id,
+      name: contactName.value,
+      address: address.value,
+      zipcode: zipcode.value,
+      city: city.value,
+      country: country.value,
+    },
+  });
+
+  isWorking.value = false;
+
+  navigateTo("/checkout");
 };
 </script>
 
