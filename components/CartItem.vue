@@ -61,10 +61,9 @@
 </template>
 
 <script setup lang="ts">
-import { Product, useUserStore } from "~/stores/user";
+import { useUserStore } from "~/stores/user";
 
 const userStore = useUserStore();
-const route = useRoute();
 
 const props = defineProps(["product", "selectedArray"]);
 const { product, selectedArray } = toRefs(props);
