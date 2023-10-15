@@ -48,7 +48,7 @@
             v-if="isAccountMenu"
             class="absolute bg-white w-[215px] text-[#333333] z-40 top-[38px] -left-[100px] border border-b"
           >
-            <div v-if="true">
+            <div v-if="!user">
               <div class="font-semibold text-[15px] my-4 px-3">
                 Welcome to AliExpress
               </div>
@@ -70,7 +70,8 @@
                 Orders
               </li>
               <li
-                v-if="true"
+                v-if="user"
+                @click="client.auth.signOut"
                 class="text-[13px] py-2 px-4 w-full hover:bg-gray-200"
               >
                 Sign out
@@ -111,24 +112,25 @@
                 <Icon name="ph:magnifying-glass" size="20" color="#ffffff" />
               </button>
             </div>
-            <div
-              v-if="false"
-              class="absolute bg-white max-w-[700px] h-auto w-full"
-            >
-              <div class="p-1">
+            <div class="absolute bg-white max-w-[700px] h-auto w-full">
+              <div
+                class="p-1"
+                v-if="items && items.data"
+                v-for="item in items.data"
+              >
                 <NuxtLink
-                  :to="`/item`"
+                  :to="`/item/${item.id}`"
                   class="flex items-center justify-between w-full cursor-pointer hover:bg-gray-100"
                 >
                   <div class="flex items-center">
                     <img
                       class="rounded-md"
                       width="40"
-                      :src="'https://picsum.photos/id/82/300/300'"
+                      :src="item.url"
                     />
-                    <div class="truncate ml-2">test</div>
+                    <div class="truncate ml-2">{{item.title}}</div>
                   </div>
-                  <div class="truncate">$40</div>
+                  <div class="truncate">${{item.price / 100}}</div>
                 </NuxtLink>
               </div>
             </div>
@@ -143,7 +145,7 @@
             <span
               class="absolute flex items-center justify-center -right-[3px] top-0 bg-[#FF4646] h-[17px] min-w-[17px] text-xs text-white px-0.5 rounded-full"
             >
-              0
+              {{userStore.cart.length}}
             </span>
             <div class="min-w-[40px]">
               <Icon
@@ -174,9 +176,32 @@ import { Loading } from "#components";
 import { useUserStore } from "~/stores/user.ts";
 
 const userStore = useUserStore();
+const client = useSupabaseClient();
+const user = useSupabaseUser();
 
 const isAccountMenu = ref(false);
 const searchItem = ref("");
 const isSearching = ref(false);
 const isCartHover = ref(false);
+const items = ref();
+
+const searchByName = useDebounce(async () => {
+  isSearching.value = true;
+  items.value = await useFetch(`/api/prisma/search-by-name/${searchItem.value}`);
+  isSearching.value = false;
+}, 100);
+
+watch(
+  () => searchItem.value,
+  async () => {
+    if (!searchItem.value) {
+      setTimeout(() => {
+        items.value = "";
+        isSearching.value = false;
+        return;
+      }, 500);
+    }
+    searchByName();
+  }
+);
 </script>

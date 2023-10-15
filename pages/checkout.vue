@@ -59,7 +59,7 @@
           </div>
 
           <div id="Items" class="bg-white rounded-lg p-4 mt-4">
-            <div v-for="product in products">
+            <div v-for="product in userStore.checkout">
               <CheckoutItem :product="product" />
             </div>
           </div>
@@ -126,6 +126,7 @@ import CheckoutItem from "~/components/CheckoutItem.vue"
 
 const userStore = useUserStore();
 const route = useRoute();
+const user = useSupabaseUser();
 
 interface Address {
   zipcode: number;
@@ -140,12 +141,24 @@ let card = null;
 let form = null;
 let total = ref(0);
 let clientSecret = null;
-let currentAddress = reactive({
-  data: {
-    zipcode: 3123,
-  }
-});
+let currentAddress = ref();
 let isProcessing = ref(false);
+
+onBeforeMount(async()=>{
+  if(userStore.checkout.length < 1) return navigateTo('/shoppingcart')
+  total.value = 0.00
+
+  if(user.value) {
+    currentAddress.value =  await useFetch(`/api/prisma/get-address-by-user/${user.value.id}`)
+    setTimeout(() => {
+      userStore.isLoading = false; 
+    }, 200);
+  }
+})
+
+watchEffect(()=>{
+  if(route.fullPath == '/checkout' && !user.value) return navigateTo('/auth')
+})
 
 onMounted(() => {
   isProcessing.value = true;
@@ -164,36 +177,6 @@ const createOrder = async (stripeId) => {};
 
 const showError = (errorMsgText) => {};
 
-const products = [
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 1,
-    price: 100,
-  },
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 2,
-    price: 20000,
-  },
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 3,
-    price: 3,
-  },
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 4,
-    price: 42,
-  },
-];
 </script>
 
 <style scoped></style>

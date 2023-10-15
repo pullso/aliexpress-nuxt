@@ -18,30 +18,22 @@
         <img class="w-full max-w-[30px]" src="/google-logo.png" />
         <div>Google</div>
       </button>
-
-      <button
-        @click="login('github')"
-        class="mt-4 flex items-center justify-center gap-3 p-1.5 w-full border hover:bg-gray-100 rounded-full text-lg font-semibold"
-      >
-        <img class="w-full max-w-[30px]" src="/github-logo.png" />
-        <div>Github</div>
-      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// const client = useSupabaseClient()
-// const user = useSupabaseUser()
+const client = useSupabaseClient()
+const user = useSupabaseUser()    
 
-// watchEffect(() => {
-//   if (user.value) {
-//     navigateTo("/");
-//   }
-// });
+watchEffect(() => {
+  if (user.value) {
+    navigateTo("/");
+  }
+});
 
-const login = async(provider) => {
-    const {data,error} = await client.auth.signInWithAuth({
+const login = async(provider: string) => {
+    const {data,error} = await client.auth.signInWithOAuth({
         provider
     })
 }

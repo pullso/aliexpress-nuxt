@@ -2,7 +2,7 @@
   <MainLayout>
     <div id="ShoppingCartPage" class="mt-4 max-w-[1200px] mx-auto px-2">
       <div
-        v-if="!products.length"
+        v-if="!userStore.cart.length"
         class="h-[500px] flex items-center justify-center"
       >
         <div class="pt-20">
@@ -10,7 +10,7 @@
 
           <div class="text-xl text-center mt-4">No items yet?</div>
 
-          <div v-if="false" class="flex text-center">
+          <div v-if="!user" class="flex text-center">
             <NuxtLink
               to="/auth"
               class="bg-[#FD374F] w-full text-white text-[21px] font-semibold p-1.5 rounded-full mt-4"
@@ -25,7 +25,7 @@
         <div class="md:w-[65%]">
           <div class="bg-white rounded-lg p-4">
             <div class="text-2xl font-bold mb-2">
-              Shopping Cart ({{ products.length }})
+              Shopping Cart ({{ userStore.cart.length }})
             </div>
           </div>
 
@@ -36,7 +36,7 @@
           </div>
 
           <div id="Items" class="bg-white rounded-lg p-4 mt-4">
-            <div v-for="product in products">
+            <div v-for="product in userStore.cart">
               <CartItem
                 :product="product"
                 :selectedArray="selectedArray"
@@ -91,6 +91,7 @@ import { Product, useUserStore } from "~/stores/user";
 const selectedArray = ref([]);
 
 const userStore = useUserStore();
+const user = useSupabaseUser();
 onMounted(() => setTimeout(() => (userStore.isLoading = false), 200));
 
 const cards = ref(["visa.png", "mastercard.png", "paypal.png", "applepay.png"]);
@@ -132,37 +133,6 @@ const goToCheckout = () => {
 
   return navigateTo("/checkout");
 };
-
-const products = [
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 1,
-    price: 100,
-  },
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 2,
-    price: 20000,
-  },
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 3,
-    price: 3,
-  },
-  {
-    title: "test title",
-    description: "descr",
-    url: "https://picsum.photos/id/82/800/800",
-    id: 4,
-    price: 42,
-  },
-];
 </script>
 
 <style scoped></style>
