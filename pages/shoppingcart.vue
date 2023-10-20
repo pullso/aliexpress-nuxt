@@ -88,7 +88,12 @@
 
 <script setup lang="ts">
 import { Product, useUserStore } from "~/stores/user";
-const selectedArray = ref([]);
+
+interface Item {
+  id: number
+}
+
+const selectedArray = ref<Item[]>([]);
 
 const userStore = useUserStore();
 const user = useSupabaseUser();
@@ -98,8 +103,8 @@ const cards = ref(["visa.png", "mastercard.png", "paypal.png", "applepay.png"]);
 
 const totalPriceComputed = computed(() => {
   return (
-    userStore.cart.reduce((acc, el) => {
-      acc += el.price;
+    selectedArray.value.reduce((acc, el) => {
+      acc += userStore?.cart?.find(cartItem => cartItem.id === el?.id)?.price || 0;
       return acc;
     }, 0) / 100
   );
@@ -112,7 +117,7 @@ const selectedRadioFunc = (e) => {
   }
 
   selectedArray.value.forEach((el, index) => {
-    if (el.id !== e.id) {
+    if (el?.id !== e.id) {
       selectedArray.value.push(e);
     } else {
       selectedArray.value.splice(index, 1);
@@ -121,7 +126,7 @@ const selectedRadioFunc = (e) => {
 };
 
 const goToCheckout = () => {
-  let ids: Product[] = [];
+  let ids: number[] = [];
   userStore.checkout = [];
   selectedArray.value.forEach((item) => ids.push(item.id));
 
