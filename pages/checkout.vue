@@ -94,9 +94,10 @@
                 id="card-error"
                 role="alert"
                 class="text-red-700 text-center font-semibold"
-              />
+              >{{ errorMsg }}</p>
 
               <button
+                ref="payButton"
                 :disabled="isProcessing"
                 type="submit"
                 class="mt-4 bg-gradient-to-r from-[#FE630C] to-[#FF3200] w-full text-white text-[21px] font-semibold p-1.5 rounded-full"
@@ -120,20 +121,14 @@
   </MainLayout>
 </template>
 
-<script setup lang="ts">
+<script setup>
+import MainLayout from "~/layouts/MainLayout.vue";
 import { useUserStore } from "~/stores/user";
-import CheckoutItem from "~/components/CheckoutItem.vue"
-
 const userStore = useUserStore();
-const route = useRoute();
 const user = useSupabaseUser();
+const route = useRoute();
 
-interface Address {
-  zipcode: number;
-  name: string;
-  address: string;
-  country: number;
-}
+// definePageMeta({ middleware: "auth" });
 
 let stripe = null;
 let elements = null;
@@ -141,42 +136,132 @@ let card = null;
 let form = null;
 let total = ref(0);
 let clientSecret = null;
-let currentAddress = ref();
+let currentAddress = ref(null);
 let isProcessing = ref(false);
+const errorMsg = ref("");
+const payButton = ref();
 
-onBeforeMount(async()=>{
-  if(userStore.checkout.length < 1) return navigateTo('/shoppingcart')
-  total.value = 0.00
-
-  if(user.value) {
-    currentAddress.value =  await useFetch(`/api/prisma/get-address-by-user/${user.value.id}`)
-    setTimeout(() => {
-      userStore.isLoading = false; 
-    }, 200);
+onBeforeMount(async () => {
+  if (userStore.checkout.length < 1) {
+    return navigateTo("/shoppingcart");
   }
-})
 
-watchEffect(()=>{
-  if(route.fullPath == '/checkout' && !user.value) return navigateTo('/auth')
-})
+  total.value = 0.0;
+  if (user.value) {
+    currentAddress.value = await useFetch(
+      `/api/prisma/get-address-by-user/${user.value.id}`
+    );
+    setTimeout(() => (userStore.isLoading = false), 200);
+  }
+});
 
-onMounted(() => {
+watchEffect(() => {
+  if (route.fullPath == "/checkout" && !user.value) {
+    return navigateTo("/auth");
+  }
+});
+
+onMounted(async () => {
   isProcessing.value = true;
-  userStore.checkout.forEach((p) => (total.value += p.price));
+
+  userStore.checkout.forEach((item) => {
+    total.value += item.price;
+  });
 });
 
-watch(total, () => {
-  if (total.value > 0) stripeInit();
-});
+watch(
+  () => total.value,
+  () => {
+    if (total.value > 0) {
+      stripeInit();
+    }
+  }
+);
 
-const stripeInit = async () => {};
+const stripeInit = async () => {
+  const runtimeConfig = useRuntimeConfig();
+  stripe = Stripe(runtimeConfig.public.stripePk);
 
-const pay = () => {};
+  let res = await $fetch("/api/stripe/paymentintent", {
+    method: "POST",
+    body: {
+      amount: total.value,
+    },
+  });
+  clientSecret = res.client_secret;
 
-const createOrder = async (stripeId) => {};
+  elements = stripe.elements();
+  card = elements.create("card", {
+    hidePostalCode: true,
+    style: {
+      base: {
+        fontSize: "18px",
+      },
+      invalid: {
+        fontFamily: "Arial, sans-serif",
+        color: "#EE4B2B",
+        iconColor: "#EE4B2B",
+      },
+    },
+  });
 
-const showError = (errorMsgText) => {};
+  // Stripe injects an iframe into the DOM
+  card.mount("#card-element");
+  card.on("change", function (event) {
+    // Disable the Pay button if there are no card details in the Element
+    payButton.value.disabled = event.empty;
+    errorMsg.value = event?.error?.message || "";
+  });
 
+  isProcessing.value = false;
+};
+
+const pay = async () => {
+  if (currentAddress.value && currentAddress.value.data == "") {
+    showError("Please add shipping address");
+    return;
+  }
+  isProcessing.value = true;
+
+  let result = await stripe.confirmCardPayment(clientSecret, {
+    payment_method: { card },
+  });
+
+  if (result.error) {
+    showError(result.error.message);
+    isProcessing.value = false;
+  } else {
+    await createOrder(result.paymentIntent.id);
+    userStore.cart = [];
+    userStore.checkout = [];
+    setTimeout(() => {
+      return navigateTo("/success");
+    }, 500);
+  }
+};
+
+const createOrder = async (stripeId) => {
+  await useFetch("/api/prisma/create-order", {
+    method: "POST",
+    body: {
+      userId: user.value.id,
+      stripeId: stripeId,
+      name: currentAddress.value.data?.name,
+      address: currentAddress.value.data?.address,
+      zipcode: currentAddress.value.data?.zipcode,
+      city: currentAddress.value.data?.city,
+      country: currentAddress.value.data?.country,
+      products: userStore?.checkout,
+    },
+  });
+};
+
+const showError = (errorMsgText) => {
+  let errorMsg = document.querySelector("#card-error");
+
+  errorMsg.value = errorMsgText;
+  setTimeout(() => {
+    errorMsg.value = "";
+  }, 4000);
+};
 </script>
-
-<style scoped></style>
